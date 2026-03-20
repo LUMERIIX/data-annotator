@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import schema from '../types/schema.json';
+import defaultSchema from '../types/schema.json';
 
 interface AnnotationState {
   audioUrl: string | null;
@@ -12,6 +12,7 @@ interface AnnotationState {
   togglePlayRequest: number;
   
   setAudioUrl: (url: string) => void;
+  setSchema: (schema: any) => void;
   setData: (data: any) => void;
   setSelectedSectionId: (id: string | null) => void;
   setIsPlaying: (isPlaying: boolean) => void;
@@ -22,7 +23,7 @@ interface AnnotationState {
 
 export const useAnnotationStore = create<AnnotationState>((set) => ({
   audioUrl: null,
-  schema: schema,
+  schema: defaultSchema,
   data: {
     name: "Sample Play",
     language: "German",
@@ -50,6 +51,7 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
   togglePlayRequest: 0,
   
   setAudioUrl: (url) => set({ audioUrl: url }),
+  setSchema: (schema) => set({ schema }),
   setData: (data) => set({ data }),
   setSelectedSectionId: (id) => set({ selectedSectionId: id }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),

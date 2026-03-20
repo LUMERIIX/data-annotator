@@ -7,7 +7,7 @@ import { useAnnotationStore } from './store/annotationStore';
 import { useShortcuts } from './hooks/useShortcuts';
 
 function App() {
-  const { audioUrl, setAudioUrl, data, setData } = useAnnotationStore();
+  const { audioUrl, setAudioUrl, data, setData, setSchema } = useAnnotationStore();
   useShortcuts(); // Aktiviert globale Shortcuts
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +27,23 @@ function App() {
           const json = JSON.parse(e.target?.result as string);
           setData(json);
         } catch (err) {
-          alert('Invalid JSON file');
+          alert('Invalid session JSON file');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleSchemaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const json = JSON.parse(e.target?.result as string);
+          setSchema(json);
+        } catch (err) {
+          alert('Invalid schema JSON file');
         }
       };
       reader.readAsText(file);
@@ -63,6 +79,18 @@ function App() {
                 style={{ display: 'none' }}
               />
               <button className="btn-sidebar" onClick={saveSession}>Save Session</button>
+            </div>
+
+            <h3>Schema</h3>
+            <div className="button-group">
+              <label htmlFor="schema-upload" className="btn-sidebar">Load Schema</label>
+              <input 
+                id="schema-upload" 
+                type="file" 
+                accept=".json" 
+                onChange={handleSchemaUpload} 
+                style={{ display: 'none' }}
+              />
             </div>
 
             <h3>Media</h3>

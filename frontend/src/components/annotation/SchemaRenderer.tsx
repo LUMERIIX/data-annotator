@@ -1,6 +1,6 @@
 import React from 'react';
 import Form from '@rjsf/core';
-import { RJSFSchema } from '@rjsf/utils';
+import type { RJSFSchema } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
 import { useAnnotationStore } from '../../store/annotationStore';
 

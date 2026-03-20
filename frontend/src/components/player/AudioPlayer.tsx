@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
-import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.js';
 import { useAnnotationStore } from '../../store/annotationStore';
 
 interface AudioPlayerProps {
@@ -37,9 +37,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
       progressColor: '#383351',
       cursorColor: '#646cff',
       height: 128,
-      responsive: true,
       normalize: true,
-      backend: 'WebAudio',
     });
 
     const regions = ws.registerPlugin(RegionsPlugin.create());

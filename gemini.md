@@ -38,6 +38,22 @@ annotator/
 └── shared/             # Gemeinsame Typen & Schemata
 ```
 
+## 🔄 Progress Tracking & Conventional Commits
+
+Wir nutzen **Conventional Commits** für eine klare Historie und automatisierte Dokumentation. Jede Änderung wird mit einem der folgenden Präfixe committed:
+
+- `feat:` Neue Features (z.B. `feat: add waveform zoom`)
+- `fix:` Bugfixes (z.B. `fix: shortcut overlap in input fields`)
+- `docs:` Dokumentation (z.B. `docs: update setup guide`)
+- `style:` Formatierung, CSS-Anpassungen ohne Logikänderung
+- `refactor:` Code-Optimierung ohne neue Features oder Fixes
+- `chore:` Maintenance-Tasks (z.B. `chore: update dependencies`)
+
+**Workflow:**
+1. Task in `gemini.md` abhaken.
+2. Änderungen implementieren und testen.
+3. Commit mit entsprechendem Präfix (z.B. `git commit -m "feat: add timeline regions for events"`).
+
 ## 📅 Phasen & Fortschritt
 - [x] **Phase 0: Project Restructuring**
     - [x] Setup `frontend/` (Vite, React, TypeScript).

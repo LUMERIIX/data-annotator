@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './App.css';
 import AudioPlayer from './components/player/AudioPlayer';
 import TreeView from './components/annotation/TreeView';
@@ -68,9 +68,14 @@ function App() {
             <h3>Media</h3>
             <div className="file-input-container">
               <label htmlFor="audio-upload" className="btn-sidebar">Open Media File</label>
-  ...
-
-            {audioUrl && <p className="file-status">File loaded successfully</p>}
+              <input 
+                id="audio-upload" 
+                type="file" 
+                accept="audio/*,video/*" 
+                onChange={handleFileChange} 
+                style={{ display: 'none' }}
+              />
+            </div>
           </section>
           <TreeView />
         </nav>

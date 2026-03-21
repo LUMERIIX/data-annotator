@@ -28,12 +28,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
     isPlaying, setIsPlaying, setCurrentTime, 
     data, setData, selectedSectionId, 
     seekRequest, togglePlayRequest, 
-    seekStep, setSeekStep 
+    seekStep, setSeekStep,
+    showSpectrogram, setShowSpectrogram
   } = useAnnotationStore();
   
   const [duration, setDuration] = useState(0);
   const [zoom, setZoom] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingStatus, setLoadingStatus] = useState('Loading Audio...');
 
   // Reaction to seekRequest
   useEffect(() => {
@@ -61,8 +64,38 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
     }
   }, [zoom, isReady]);
 
+  // Handle Spectrogram Toggle
+  useEffect(() => {
+    if (isReady && wavesurferRef.current && showSpectrogram) {
+      setLoadingStatus('Generating Spectrogram...');
+      setIsLoading(true);
+      
+      const timer = setTimeout(() => {
+        try {
+          wavesurferRef.current!.registerPlugin(
+            SpectrogramPlugin.create({
+              container: spectroRef.current!,
+              labels: true,
+              height: 100,
+              splitChannels: false,
+            })
+          );
+        } catch (err) {
+          console.error("Spectrogram error:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [showSpectrogram, isReady]);
+
   useEffect(() => {
     if (!containerRef.current) return;
+
+    setIsLoading(true);
+    setIsReady(false);
+    setLoadingStatus('Loading Audio...');
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
@@ -75,27 +108,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
       fillParent: true,
     });
 
-    // Register Plugins
     const regions = ws.registerPlugin(RegionsPlugin.create());
     regionsRef.current = regions;
-
-    if (spectroRef.current) {
-      ws.registerPlugin(
-        SpectrogramPlugin.create({
-          container: spectroRef.current,
-          labels: true,
-          height: 100,
-          splitChannels: false,
-        })
-      );
-    }
 
     ws.load(url);
 
     ws.on('ready', () => {
       setDuration(ws.getDuration());
-      setIsReady(true);
       syncRegions(regions, data, selectedSectionId);
+      setIsReady(true);
+      setIsLoading(false);
     });
 
     ws.on('timeupdate', () => {
@@ -107,24 +129,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
 
     regions.on('region-updated', (region) => {
       if (isUpdatingFromStore.current) return;
-
+      const currentState = useAnnotationStore.getState();
       const parts = region.id.split('-');
       const vIdx = Number(parts[0]);
       const sIdx = Number(parts[1]);
-      
-      // WICHTIG: Aktuellen State direkt aus dem Store holen, nicht aus der Closure!
-      const currentState = useAnnotationStore.getState();
       const newData = JSON.parse(JSON.stringify(currentState.data));
 
       if (parts.length === 2) {
-        // Section Update
         if (newData.variants[vIdx]?.sections[sIdx]) {
           newData.variants[vIdx].sections[sIdx].start = Math.round(region.start * 1000);
           newData.variants[vIdx].sections[sIdx].stop = Math.round(region.end * 1000);
           currentState.setData(newData);
         }
       } else if (parts.length === 4 && parts[2] === 'e') {
-        // Event Update
         const eIdx = Number(parts[3]);
         if (newData.variants[vIdx]?.sections[sIdx]?.events[eIdx]) {
           newData.variants[vIdx].sections[sIdx].events[eIdx].start = Math.round(region.start * 1000);
@@ -142,7 +159,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
     };
   }, [url]);
 
-  // Sync regions whenever data or selectedId changes (Store -> UI)
   useEffect(() => {
     if (isReady && regionsRef.current && wavesurferRef.current) {
       isUpdatingFromStore.current = true;
@@ -174,19 +190,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
 
         const existing = existingRegions.find((r: any) => r.id === id);
         if (existing) {
-          // Prüfe auf signifikante Änderungen
-          const hasMoved = Math.abs(existing.start - regionData.start) > 0.001 || Math.abs(existing.end - regionData.end) > 0.001;
-          const hasColorChanged = existing.color !== regionData.color;
-          const hasContentChanged = existing.content?.innerText !== regionData.content;
-
-          if (hasMoved || hasColorChanged || hasContentChanged) {
+          const diffStart = Math.abs(existing.start - regionData.start);
+          const diffEnd = Math.abs(existing.end - regionData.end);
+          if (diffStart > 0.001 || diffEnd > 0.001 || existing.color !== regionData.color || existing.content?.innerText !== regionData.content) {
             existing.setOptions(regionData);
           }
         } else {
           regionsPlugin.addRegion(regionData);
         }
 
-        // Events der selektierten Sektion
         if (isSelected && section.events) {
           section.events.forEach((event: any, eIdx: number) => {
             const eId = `${id}-e-${eIdx}`;
@@ -195,7 +207,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
               id: eId,
               start: event.start / 1000,
               end: event.stop / 1000,
-              color: 'rgba(255, 165, 0, 0.4)', // Deutlicheres Orange für Events
+              color: 'rgba(255, 165, 0, 0.4)',
               drag: true,
               resize: true,
               content: event.PlayEventType,
@@ -215,7 +227,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
       });
     });
 
-    // Alte Regionen entfernen
     existingRegions.forEach((r: any) => {
       if (!activeIds.has(r.id)) {
         r.remove();
@@ -235,22 +246,40 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
   return (
     <div className="audio-player">
       <div className="analyzer-container">
+        {isLoading && (
+          <div className="player-loader-overlay">
+            <div className="spinner"></div>
+            <div className="loader-text">{loadingStatus}</div>
+          </div>
+        )}
         <div ref={containerRef} className="waveform-container" />
-        <div ref={spectroRef} className="spectrogram-container" />
+        {showSpectrogram && <div ref={spectroRef} className="spectrogram-container" />}
       </div>
       
-      <div className="player-controls">
+      <div className={`player-controls ${isLoading ? 'disabled' : ''}`}>
         <div className="main-controls">
-          <button onClick={togglePlay}>{isPlaying ? 'Pause' : 'Play'}</button>
+          <button onClick={togglePlay} disabled={isLoading}>{isPlaying ? 'Pause' : 'Play'}</button>
           <div className="time-display">
             {wavesurferRef.current ? formatTime(wavesurferRef.current.getCurrentTime()) : '00:00.000'} / {formatTime(duration)}
           </div>
         </div>
 
         <div className="control-group">
+          <div className="setting-toggle">
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={showSpectrogram} 
+                onChange={(e) => setShowSpectrogram(e.target.checked)} 
+                disabled={isLoading}
+              />
+              Spectrogram
+            </label>
+          </div>
+
           <div className="seek-step-selector">
             <label>Seek Step:</label>
-            <select value={seekStep} onChange={(e) => setSeekStep(Number(e.target.value))}>
+            <select value={seekStep} onChange={(e) => setSeekStep(Number(e.target.value))} disabled={isLoading}>
               {[100, 500, 1000, 2000, 5000, 10000].map(s => (
                 <option key={s} value={s}>{s >= 1000 ? `${s/1000}s` : `${s}ms`}</option>
               ))}
@@ -265,24 +294,49 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
               max="500" 
               value={zoom} 
               onChange={(e) => setZoom(Number(e.target.value))} 
+              disabled={isLoading}
             />
           </div>
         </div>
       </div>
 
       <style>{`
-        .audio-player { width: 100%; display: flex; flex-direction: column; gap: 1rem; }
-        .analyzer-container { border: 1px solid #333; background: #000; border-radius: 8px; overflow: hidden; }
-        .waveform-container { border-bottom: 1px solid #222; }
-        .spectrogram-container { background: #000; }
+        .audio-player { width: 100%; display: flex; flex-direction: column; gap: 1rem; position: relative; }
+        .analyzer-container { border: 1px solid #333; background: #000; border-radius: 8px; overflow: hidden; position: relative; min-height: 130px; }
+        .waveform-container { border-bottom: 1px solid #222; min-height: 128px; }
+        .spectrogram-container { background: #000; min-height: 100px; border-top: 1px solid #222; }
         
-        .player-controls { display: flex; justify-content: space-between; align-items: center; gap: 2rem; padding: 0.5rem 0; flex-wrap: wrap; }
+        .player-loader-overlay { 
+          position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+          background: rgba(0,0,0,0.85); z-index: 1000; 
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+          backdrop-filter: blur(2px);
+        }
+        
+        .spinner {
+          width: 40px; height: 40px;
+          border: 3px solid rgba(100, 108, 255, 0.2);
+          border-top-color: var(--accent-color);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        .loader-text { color: var(--accent-color); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.5px; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .player-controls { display: flex; justify-content: space-between; align-items: center; gap: 2rem; padding: 0.5rem 0; flex-wrap: wrap; transition: opacity 0.3s; }
+        .player-controls.disabled { opacity: 0.5; pointer-events: none; }
+        
         .main-controls { display: flex; align-items: center; gap: 1rem; }
         .control-group { display: flex; align-items: center; gap: 2rem; }
         
         .time-display { font-family: monospace; font-size: 1.1rem; color: #aaa; }
-        .seek-step-selector, .zoom-control { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #888; }
+        .seek-step-selector, .zoom-control, .setting-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #888; }
         .seek-step-selector select { background: #333; color: white; border: 1px solid #555; padding: 0.2rem; border-radius: 4px; }
+        
+        .checkbox-label { cursor: pointer; display: flex; align-items: center; gap: 0.5rem; color: #aaa; }
+        .checkbox-label input { accent-color: var(--accent-color); }
         
         input[type="range"] { accent-color: var(--accent-color); cursor: pointer; }
       `}</style>

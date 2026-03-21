@@ -48,4 +48,16 @@ describe('AnnotationStore', () => {
     expect(useAnnotationStore.getState().data).not.toBe(originalData);
     expect(useAnnotationStore.getState().data.name).toBe("Changed");
   });
+
+  it('should automatically select the newly created section', () => {
+    const { addSectionAtCurrentTime } = useAnnotationStore.getState();
+    
+    useAnnotationStore.setState({ currentTime: 5000, selectedSectionId: null });
+    addSectionAtCurrentTime();
+    
+    const state = useAnnotationStore.getState();
+    expect(state.data.variants[0].sections.length).toBe(2);
+    expect(state.selectedSectionId).toBe("0-1");
+    expect(state.data.variants[0].sections[1].start).toBe(5000);
+  });
 });

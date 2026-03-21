@@ -30,9 +30,10 @@ interface AnnotationState {
   increaseSeekStep: () => void;
   decreaseSeekStep: () => void;
   togglePlay: () => void;
+  addSectionAtCurrentTime: () => void;
 }
 
-export const useAnnotationStore = create<AnnotationState>((set) => ({
+export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   audioUrl: null,
   schema: defaultSchema,
   data: {
@@ -64,7 +65,7 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
   
   setAudioUrl: (url) => set({ audioUrl: url }),
   setSchema: (schema) => set({ schema }),
-  setData: (data) => set({ data: JSON.parse(JSON.stringify(data)) }), // Deep Clone für Immutability
+  setData: (data) => set({ data: JSON.parse(JSON.stringify(data)) }),
   setSelectedSectionId: (id) => set({ selectedSectionId: id }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTime: (time) => set({ currentTime: time }),
@@ -81,4 +82,35 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
     return { seekStep: SEEK_STEPS[prevIndex] };
   }),
   togglePlay: () => set((state) => ({ togglePlayRequest: state.togglePlayRequest + 1 })),
+  
+  addSectionAtCurrentTime: () => {
+    const { data, selectedSectionId, currentTime } = get();
+    const newData = JSON.parse(JSON.stringify(data));
+    
+    // Bestimme Variante (entweder von Selektion oder erste Variante)
+    let vIdx = 0;
+    if (selectedSectionId) {
+      vIdx = Number(selectedSectionId.split('-')[0]);
+    }
+
+    if (newData.variants[vIdx]) {
+      if (!newData.variants[vIdx].sections) newData.variants[vIdx].sections = [];
+      
+      const newSection = {
+        name: `New Section ${newData.variants[vIdx].sections.length + 1}`,
+        start: Math.round(currentTime),
+        stop: Math.round(currentTime + 5000),
+        events: [],
+        cues: []
+      };
+      
+      newData.variants[vIdx].sections.push(newSection);
+      const newSIdx = newData.variants[vIdx].sections.length - 1;
+      
+      set({ 
+        data: newData,
+        selectedSectionId: `${vIdx}-${newSIdx}` // Automatische Selektion
+      });
+    }
+  }
 }));

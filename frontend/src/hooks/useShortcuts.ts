@@ -60,10 +60,8 @@ export const useShortcuts = () => {
           }
           break;
         case 'KeyN':
-          if (selectedSectionId) {
-            e.preventDefault();
-            addNewSection(state);
-          }
+          e.preventDefault();
+          state.addSectionAtCurrentTime();
           break;
         case 'Minus':
           e.preventDefault();
@@ -98,23 +96,6 @@ export const useShortcuts = () => {
           stop: Math.round(currentTime + 2000)
         });
         newData.variants[vIdx].sections[sIdx].events = events;
-        setData(newData);
-      }
-    };
-
-    const addNewSection = (state: any) => {
-      const { selectedSectionId, data, setData, currentTime } = state;
-      const [vIdx] = selectedSectionId!.split('-').map(Number);
-      const newData = JSON.parse(JSON.stringify(data));
-      if (newData.variants[vIdx]) {
-        if (!newData.variants[vIdx].sections) newData.variants[vIdx].sections = [];
-        newData.variants[vIdx].sections.push({
-          name: `New Section`,
-          start: Math.round(currentTime),
-          stop: Math.round(currentTime + 5000),
-          events: [],
-          cues: []
-        });
         setData(newData);
       }
     };

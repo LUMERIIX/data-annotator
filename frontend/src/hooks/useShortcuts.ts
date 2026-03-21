@@ -7,6 +7,9 @@ export const useShortcuts = () => {
     togglePlay, 
     currentTime, 
     seekTo, 
+    seekStep,
+    increaseSeekStep,
+    decreaseSeekStep,
     selectedSectionId, 
     data, 
     setData 
@@ -19,6 +22,12 @@ export const useShortcuts = () => {
         return;
       }
 
+      let multiplier = 1;
+      if (e.shiftKey) multiplier = 5;
+      if (e.altKey) multiplier = 0.1;
+
+      const step = seekStep * multiplier;
+
       switch (e.code) {
         case 'Space':
           e.preventDefault();
@@ -26,11 +35,11 @@ export const useShortcuts = () => {
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          seekTo(Math.max(0, currentTime - 1000));
+          seekTo(Math.max(0, currentTime - step));
           break;
         case 'ArrowRight':
           e.preventDefault();
-          seekTo(currentTime + 1000);
+          seekTo(currentTime + step);
           break;
         case 'KeyS':
           if (selectedSectionId) {
@@ -46,6 +55,23 @@ export const useShortcuts = () => {
           if (selectedSectionId) {
             addEventAtCurrentTime();
           }
+          break;
+        case 'KeyN':
+          if (selectedSectionId) {
+            addNewSection();
+          }
+          break;
+        case 'Minus':
+          decreaseSeekStep();
+          break;
+        case 'Equal': // '+' Key is typically Equal
+          increaseSeekStep();
+          break;
+        case 'NumpadSubtract':
+          decreaseSeekStep();
+          break;
+        case 'NumpadAdd':
+          increaseSeekStep();
           break;
       }
     };
@@ -74,7 +100,23 @@ export const useShortcuts = () => {
       }
     };
 
+    const addNewSection = () => {
+      const [vIdx] = selectedSectionId!.split('-').map(Number);
+      const newData = { ...data };
+      if (newData.variants[vIdx]) {
+        if (!newData.variants[vIdx].sections) newData.variants[vIdx].sections = [];
+        newData.variants[vIdx].sections.push({
+          name: `New Section`,
+          start: Math.round(currentTime),
+          stop: Math.round(currentTime + 5000), // Default 5s
+          events: [],
+          cues: []
+        });
+        setData(newData);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, togglePlay, currentTime, seekTo, selectedSectionId, data, setData]);
+  }, [isPlaying, togglePlay, currentTime, seekTo, seekStep, increaseSeekStep, decreaseSeekStep, selectedSectionId, data, setData]);
 };

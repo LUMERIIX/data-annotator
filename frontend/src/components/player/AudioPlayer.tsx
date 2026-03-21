@@ -11,13 +11,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const regionsRef = useRef<any>(null);
-  const { isPlaying, setIsPlaying, setCurrentTime, data, setData, selectedSectionId, seekRequest, togglePlayRequest } = useAnnotationStore();
+  const { isPlaying, setIsPlaying, setCurrentTime, data, setData, selectedSectionId, seekRequest, togglePlayRequest, seekStep, setSeekStep } = useAnnotationStore();
   const [duration, setDuration] = useState(0);
 
   // Reaction to seekRequest
   useEffect(() => {
     if (seekRequest !== null && wavesurferRef.current) {
-      wavesurferRef.current.setTime(seekRequest / 1000);
+      wavesurferRef.current.setTime(seekRequest.time / 1000);
+      setCurrentTime(seekRequest.time); // Manuell aktualisieren für kontinuierliches Seeken im Pause-Zustand
     }
   }, [seekRequest]);
 
@@ -148,11 +149,24 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
         <div className="time-display">
           {wavesurferRef.current ? formatTime(wavesurferRef.current.getCurrentTime()) : '00:00.000'} / {formatTime(duration)}
         </div>
+        <div className="seek-step-selector">
+          <label>Seek Step:</label>
+          <select value={seekStep} onChange={(e) => setSeekStep(Number(e.target.value))}>
+            <option value={100}>100ms</option>
+            <option value={500}>500ms</option>
+            <option value={1000}>1s</option>
+            <option value={2000}>2s</option>
+            <option value={5000}>5s</option>
+            <option value={10000}>10s</option>
+          </select>
+        </div>
       </div>
       <style>{`
         .audio-player { width: 100%; }
-        .player-controls { margin-top: 1rem; display: flex; align-items: center; gap: 1rem; }
+        .player-controls { margin-top: 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
         .time-display { font-family: monospace; font-size: 1.1rem; }
+        .seek-step-selector { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+        .seek-step-selector select { background: #333; color: white; border: 1px solid #555; padding: 0.2rem; border-radius: 4px; }
       `}</style>
     </div>
   );

@@ -28,6 +28,9 @@ const TreeView: React.FC = () => {
 
   const addSection = (vIdx: number) => {
     const newData = { ...data };
+    if (!newData.variants[vIdx].sections) {
+      newData.variants[vIdx].sections = [];
+    }
     newData.variants[vIdx].sections.push({
       name: `New Section`,
       start: 0,

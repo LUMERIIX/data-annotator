@@ -48,7 +48,7 @@ npm run dev
 - **Key S**: Set Section Start to current playback position
 - **Key E**: Set Section End to current playback position
 - **Key A**: Add a new Event at the current position
-- **Key N**: Add a new Section at the current position
+- **Key N**: Add a new Section at the current position (setting start at insertion point)
 
 ## 🛠 Features
 - **Dynamic Schema Rendering**: Automatically generates forms from JSON schemas.

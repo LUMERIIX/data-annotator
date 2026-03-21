@@ -64,7 +64,7 @@ export const useAnnotationStore = create<AnnotationState>((set) => ({
   
   setAudioUrl: (url) => set({ audioUrl: url }),
   setSchema: (schema) => set({ schema }),
-  setData: (data) => set({ data }),
+  setData: (data) => set({ data: JSON.parse(JSON.stringify(data)) }), // Deep Clone für Immutability
   setSelectedSectionId: (id) => set({ selectedSectionId: id }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTime: (time) => set({ currentTime: time }),

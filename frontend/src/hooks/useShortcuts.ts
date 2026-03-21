@@ -2,25 +2,25 @@ import { useEffect } from 'react';
 import { useAnnotationStore } from '../store/annotationStore';
 
 export const useShortcuts = () => {
-  const { 
-    isPlaying, 
-    togglePlay, 
-    currentTime, 
-    seekTo, 
-    seekStep,
-    increaseSeekStep,
-    decreaseSeekStep,
-    selectedSectionId, 
-    data, 
-    setData 
-  } = useAnnotationStore();
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Wenn ein Input-Feld fokussiert ist, Shortcuts ignorieren
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
+
+      const state = useAnnotationStore.getState();
+      const { 
+        currentTime, 
+        seekStep, 
+        selectedSectionId, 
+        data, 
+        setData, 
+        togglePlay, 
+        seekTo, 
+        increaseSeekStep, 
+        decreaseSeekStep 
+      } = state;
 
       let multiplier = 1;
       if (e.shiftKey) multiplier = 5;
@@ -43,55 +43,57 @@ export const useShortcuts = () => {
           break;
         case 'KeyS':
           if (selectedSectionId) {
-            updateSelected('start', currentTime);
+            e.preventDefault();
+            updateSelected(state, 'start', currentTime);
           }
           break;
         case 'KeyE':
           if (selectedSectionId) {
-            updateSelected('stop', currentTime);
+            e.preventDefault();
+            updateSelected(state, 'stop', currentTime);
           }
           break;
         case 'KeyA':
           if (selectedSectionId) {
-            addEventAtCurrentTime();
+            e.preventDefault();
+            addEventAtCurrentTime(state);
           }
           break;
         case 'KeyN':
           if (selectedSectionId) {
-            addNewSection();
+            e.preventDefault();
+            addNewSection(state);
           }
           break;
         case 'Minus':
+          e.preventDefault();
           decreaseSeekStep();
           break;
         case 'Equal': // '+' Key is typically Equal
-          increaseSeekStep();
-          break;
-        case 'NumpadSubtract':
-          decreaseSeekStep();
-          break;
-        case 'NumpadAdd':
+          e.preventDefault();
           increaseSeekStep();
           break;
       }
     };
 
-    const updateSelected = (field: 'start' | 'stop', time: number) => {
+    const updateSelected = (state: any, field: 'start' | 'stop', time: number) => {
+      const { selectedSectionId, data, setData } = state;
       const [vIdx, sIdx] = selectedSectionId!.split('-').map(Number);
-      const newData = { ...data };
+      const newData = JSON.parse(JSON.stringify(data));
       if (newData.variants[vIdx]?.sections[sIdx]) {
         newData.variants[vIdx].sections[sIdx][field] = Math.round(time);
         setData(newData);
       }
     };
 
-    const addEventAtCurrentTime = () => {
+    const addEventAtCurrentTime = (state: any) => {
+      const { selectedSectionId, data, setData, currentTime } = state;
       const [vIdx, sIdx] = selectedSectionId!.split('-').map(Number);
-      const newData = { ...data };
+      const newData = JSON.parse(JSON.stringify(data));
       if (newData.variants[vIdx]?.sections[sIdx]) {
         const events = newData.variants[vIdx].sections[sIdx].events || [];
         events.push({
-          PlayEventType: "BadAudio", // Default
+          PlayEventType: "BadAudio",
           start: Math.round(currentTime),
           stop: Math.round(currentTime + 2000)
         });
@@ -100,15 +102,16 @@ export const useShortcuts = () => {
       }
     };
 
-    const addNewSection = () => {
+    const addNewSection = (state: any) => {
+      const { selectedSectionId, data, setData, currentTime } = state;
       const [vIdx] = selectedSectionId!.split('-').map(Number);
-      const newData = { ...data };
+      const newData = JSON.parse(JSON.stringify(data));
       if (newData.variants[vIdx]) {
         if (!newData.variants[vIdx].sections) newData.variants[vIdx].sections = [];
         newData.variants[vIdx].sections.push({
           name: `New Section`,
           start: Math.round(currentTime),
-          stop: Math.round(currentTime + 5000), // Default 5s
+          stop: Math.round(currentTime + 5000),
           events: [],
           cues: []
         });
@@ -118,5 +121,5 @@ export const useShortcuts = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, togglePlay, currentTime, seekTo, seekStep, increaseSeekStep, decreaseSeekStep, selectedSectionId, data, setData]);
+  }, []);
 };

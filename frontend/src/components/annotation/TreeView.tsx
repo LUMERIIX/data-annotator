@@ -5,7 +5,7 @@ const TreeView: React.FC = () => {
   const { data, selectedSectionId, setSelectedSectionId, setData } = useAnnotationStore();
 
   const updateData = (path: string[], value: any) => {
-    const newData = { ...data };
+    const newData = JSON.parse(JSON.stringify(data));
     let current = newData;
     for (let i = 0; i < path.length - 1; i++) {
       current = current[path[i]];

@@ -15,9 +15,12 @@ const SchemaRenderer: React.FC = () => {
   const selectedSection = data.variants[vIdx].sections[sIdx];
 
   const handleFormChange = ({ formData }: any) => {
-    const newData = { ...data };
-    newData.variants[vIdx].sections[sIdx] = formData;
-    setData(newData);
+    // Deep Clone um Mutationen zu verhindern und Reaktivität zu garantieren
+    const newData = JSON.parse(JSON.stringify(data));
+    if (newData.variants[vIdx]?.sections[sIdx]) {
+      newData.variants[vIdx].sections[sIdx] = formData;
+      setData(newData);
+    }
   };
 
   // Wir extrahieren die Definition für eine Section aus dem Hauptschema

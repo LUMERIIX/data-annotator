@@ -3,6 +3,7 @@ import { useAnnotationStore } from '../../store/annotationStore';
 
 const TreeView: React.FC = () => {
   const { data, selectedSectionId, setSelectedSectionId, setData } = useAnnotationStore();
+  const [editingId, setEditingId] = React.useState<string | null>(null);
 
   const initializeData = () => {
     setData({
@@ -84,51 +85,65 @@ const TreeView: React.FC = () => {
             className="node-input main-title"
             value={data.name || ''} 
             placeholder="Project Name"
+            readOnly={editingId !== 'root'}
+            onDoubleClick={() => setEditingId('root')}
+            onBlur={() => setEditingId(null)}
             onChange={(e) => updateData(['name'], e.target.value)}
           />
         </div>
         <div className="variants-list">
-
-          {(data.variants || []).map((variant: any, vIdx: number) => (
-            <div key={`v-${vIdx}`} className="variant-node">
-              <div className="node-label">
-                <input 
-                  className="node-input variant-title"
-                  value={variant.name || ''} 
-                  placeholder="Variant Name"
-                  onChange={(e) => updateData(['variants', vIdx.toString(), 'name'], e.target.value)}
-                />
-                <div className="node-actions">
-                  <button className="btn-icon" onClick={() => addSection(vIdx)} title="Add Section">+</button>
-                  <button className="btn-icon btn-danger" onClick={() => removeVariant(vIdx)} title="Remove Variant">×</button>
+          {(data.variants || []).map((variant: any, vIdx: number) => {
+            const vId = `v-${vIdx}`;
+            const isVSelected = selectedSectionId === vId;
+            return (
+              <div key={vId} className={`variant-node ${isVSelected ? 'selected' : ''}`}>
+                <div 
+                  className="node-label" 
+                  onClick={() => setSelectedSectionId(vId)}
+                >
+                  <input 
+                    className="node-input variant-title"
+                    value={variant.name || ''} 
+                    placeholder="Variant Name"
+                    readOnly={editingId !== vId}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingId(vId); }}
+                    onBlur={() => setEditingId(null)}
+                    onChange={(e) => updateData(['variants', vIdx.toString(), 'name'], e.target.value)}
+                  />
+                  <div className="node-actions" onClick={(e) => e.stopPropagation()}>
+                    <button className="btn-icon" onClick={() => addSection(vIdx)} title="Add Section">+</button>
+                    <button className="btn-icon btn-danger" onClick={() => removeVariant(vIdx)} title="Remove Variant">×</button>
+                  </div>
+                </div>
+                <div className="sections-list">
+                  {(variant.sections || []).map((section: any, sIdx: number) => {
+                    const sId = `${vIdx}-${sIdx}`;
+                    const isSSelected = selectedSectionId === sId;
+                    return (
+                      <div 
+                        key={sId} 
+                        className={`section-node ${isSSelected ? 'selected' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedSectionId(sId); }}
+                      >
+                        <input 
+                          className="node-input section-title"
+                          value={section.name || ''} 
+                          placeholder="Section Name"
+                          readOnly={editingId !== sId}
+                          onDoubleClick={(e) => { e.stopPropagation(); setEditingId(sId); }}
+                          onBlur={() => setEditingId(null)}
+                          onChange={(e) => updateData(['variants', vIdx.toString(), 'sections', sIdx.toString(), 'name'], e.target.value)}
+                        />
+                        <button className="btn-icon btn-danger btn-small-icon" onClick={(e) => { e.stopPropagation(); removeSection(vIdx, sIdx); }} title="Remove Section">×</button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="sections-list">
-                {(variant.sections || []).map((section: any, sIdx: number) => {
-                  const sectionId = `${vIdx}-${sIdx}`;
-                  const isSelected = selectedSectionId === sectionId;
-                  return (
-                    <div 
-                      key={sectionId} 
-                      className={`section-node ${isSelected ? 'selected' : ''}`}
-                      onClick={() => setSelectedSectionId(sectionId)}
-                    >
-                      <input 
-                        className="node-input section-title"
-                        value={section.name || ''} 
-                        placeholder="Section Name"
-                        onChange={(e) => updateData(['variants', vIdx.toString(), 'sections', sIdx.toString(), 'name'], e.target.value)}
-                      />
-                      <button className="btn-icon btn-danger btn-small-icon" onClick={(e) => { e.stopPropagation(); removeSection(vIdx, sIdx); }} title="Remove Section">×</button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
-
       <style>{`
         .tree-header {
           display: flex;
@@ -148,7 +163,6 @@ const TreeView: React.FC = () => {
           background-color: #333;
         }
         .btn-small {
-
           font-size: 0.7rem;
           padding: 0.2rem 0.5rem;
         }
@@ -157,6 +171,13 @@ const TreeView: React.FC = () => {
           justify-content: space-between;
           align-items: center;
           gap: 0.5rem;
+          padding: 0.1rem 0.3rem;
+          cursor: pointer;
+          border-radius: 4px;
+        }
+        .variant-node.selected > .node-label {
+          background-color: #444;
+          border-left: 3px solid #646cff;
         }
         .node-actions {
           display: flex;
@@ -184,10 +205,15 @@ const TreeView: React.FC = () => {
           width: 100%;
           padding: 0.2rem;
           border-bottom: 1px solid transparent;
+          cursor: inherit;
         }
         .node-input:focus {
           outline: none;
           border-bottom: 1px solid var(--accent-color);
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .node-input[readonly] {
+          pointer-events: none;
         }
         .main-title {
           font-weight: bold;
@@ -247,5 +273,6 @@ const TreeView: React.FC = () => {
     </div>
   );
 };
+
 
 export default TreeView;

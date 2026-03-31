@@ -48,8 +48,50 @@ const SchemaRenderer: React.FC = () => {
     );
   }
 
+  // Handle Variant Selection
+  if (selectedSectionId.startsWith('v-')) {
+    const vIdx = Number(selectedSectionId.split('-')[1]);
+    const selectedVariant = data.variants?.[vIdx];
+
+    if (!selectedVariant) {
+      return <p>Selected variant not found.</p>;
+    }
+
+    const handleVariantChange = ({ formData }: any) => {
+      const newData = JSON.parse(JSON.stringify(data));
+      if (newData.variants[vIdx]) {
+        newData.variants[vIdx] = formData;
+        setData(newData);
+      }
+    };
+
+    // Extract Variant definition
+    // We exclude 'sections' from the variant form to avoid duplicate UI
+    const variantSchema: RJSFSchema = schema.definitions?.PlayVariant ? {
+      ...JSON.parse(JSON.stringify(schema.definitions.PlayVariant)),
+      definitions: schema.definitions,
+    } : schema;
+
+    if (variantSchema.properties && variantSchema.properties.sections) {
+      delete variantSchema.properties.sections;
+    }
+
+    return (
+      <div className="schema-renderer">
+        <h2>Edit Variant: {selectedVariant.name}</h2>
+        <Form
+          schema={variantSchema}
+          validator={validator}
+          formData={selectedVariant}
+          onChange={handleVariantChange}
+        />
+      </div>
+    );
+  }
+
   // Handle Section Selection
   const [vIdx, sIdx] = selectedSectionId.split('-').map(Number);
+
   const selectedSection = data.variants?.[vIdx]?.sections?.[sIdx];
 
   if (!selectedSection) {

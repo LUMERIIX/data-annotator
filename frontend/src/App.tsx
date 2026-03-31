@@ -51,6 +51,7 @@ function App() {
   };
 
   const saveSession = () => {
+    if (!data) return;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -78,8 +79,9 @@ function App() {
                 onChange={handleSessionUpload} 
                 style={{ display: 'none' }}
               />
-              <button className="btn-sidebar" onClick={saveSession}>Save Session</button>
+              <button className="btn-sidebar" onClick={saveSession} disabled={!data}>Save Session</button>
             </div>
+
 
             <h3>Schema</h3>
             <div className="button-group">

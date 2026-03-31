@@ -4,10 +4,26 @@ import { useAnnotationStore } from '../../store/annotationStore';
 const TreeView: React.FC = () => {
   const { data, selectedSectionId, setSelectedSectionId, setData } = useAnnotationStore();
 
+  const initializeData = () => {
+    setData({
+      name: "New Project",
+      variants: []
+    });
+  };
+
+  if (!data) {
+    return (
+      <div className="tree-view-empty">
+        <button className="btn-sidebar" onClick={initializeData}>Create New Session</button>
+      </div>
+    );
+  }
+
   const updateData = (path: string[], value: any) => {
     const newData = JSON.parse(JSON.stringify(data));
     let current = newData;
     for (let i = 0; i < path.length - 1; i++) {
+      if (!current[path[i]]) current[path[i]] = {};
       current = current[path[i]];
     }
     current[path[path.length - 1]] = value;
@@ -15,7 +31,7 @@ const TreeView: React.FC = () => {
   };
 
   const addVariant = () => {
-    const newData = { ...data };
+    const newData = JSON.parse(JSON.stringify(data));
     if (!newData.variants) newData.variants = [];
     newData.variants.push({
       name: `Variant ${newData.variants.length + 1}`,
@@ -27,7 +43,7 @@ const TreeView: React.FC = () => {
   };
 
   const addSection = (vIdx: number) => {
-    const newData = { ...data };
+    const newData = JSON.parse(JSON.stringify(data));
     if (!newData.variants[vIdx].sections) {
       newData.variants[vIdx].sections = [];
     }
@@ -42,13 +58,13 @@ const TreeView: React.FC = () => {
   };
 
   const removeVariant = (vIdx: number) => {
-    const newData = { ...data };
+    const newData = JSON.parse(JSON.stringify(data));
     newData.variants.splice(vIdx, 1);
     setData(newData);
   };
 
   const removeSection = (vIdx: number, sIdx: number) => {
-    const newData = { ...data };
+    const newData = JSON.parse(JSON.stringify(data));
     newData.variants[vIdx].sections.splice(sIdx, 1);
     setData(newData);
   };
@@ -60,13 +76,19 @@ const TreeView: React.FC = () => {
         <button className="btn-small" onClick={addVariant}>+ Variant</button>
       </div>
       <div className="play-node">
-        <input 
-          className="node-input main-title"
-          value={data.name || ''} 
-          placeholder="Play Name"
-          onChange={(e) => updateData(['name'], e.target.value)}
-        />
+        <div 
+          className={`project-header ${!selectedSectionId ? 'selected-root' : ''}`}
+          onClick={() => setSelectedSectionId(null)}
+        >
+          <input 
+            className="node-input main-title"
+            value={data.name || ''} 
+            placeholder="Project Name"
+            onChange={(e) => updateData(['name'], e.target.value)}
+          />
+        </div>
         <div className="variants-list">
+
           {(data.variants || []).map((variant: any, vIdx: number) => (
             <div key={`v-${vIdx}`} className="variant-node">
               <div className="node-label">
@@ -106,6 +128,7 @@ const TreeView: React.FC = () => {
           ))}
         </div>
       </div>
+
       <style>{`
         .tree-header {
           display: flex;
@@ -113,7 +136,19 @@ const TreeView: React.FC = () => {
           align-items: center;
           margin-bottom: 0.5rem;
         }
+        .project-header {
+          padding: 0.2rem 0.5rem;
+          cursor: pointer;
+          border-radius: 4px;
+        }
+        .project-header.selected-root {
+          background-color: #646cff;
+        }
+        .project-header:hover:not(.selected-root) {
+          background-color: #333;
+        }
         .btn-small {
+
           font-size: 0.7rem;
           padding: 0.2rem 0.5rem;
         }

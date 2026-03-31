@@ -14,8 +14,6 @@ export const useShortcuts = () => {
         currentTime, 
         seekStep, 
         selectedSectionId, 
-        data, 
-        setData, 
         togglePlay, 
         seekTo, 
         increaseSeekStep, 

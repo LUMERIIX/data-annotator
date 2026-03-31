@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import defaultSchema from '../types/schema.json';
 
 export const SEEK_STEPS = [100, 500, 1000, 2000, 5000, 10000];
 
@@ -11,8 +10,8 @@ interface SeekRequest {
 
 interface AnnotationState {
   audioUrl: string | null;
-  schema: any;
-  data: any;
+  schema: any | null;
+  data: any | null;
   selectedSectionId: string | null;
   isPlaying: boolean;
   currentTime: number;
@@ -40,27 +39,8 @@ export const useAnnotationStore = create<AnnotationState>()(
   persist(
     (set, get) => ({
       audioUrl: null,
-      schema: defaultSchema,
-      data: {
-        name: "Sample Play",
-        language: "German",
-        variants: [
-          {
-            name: "Premiere",
-            duration: 3600000,
-            audio_quality: 3,
-            sections: [
-              {
-                name: "Act 1, Scene 1",
-                start: 0,
-                stop: 600000,
-                events: [],
-                cues: []
-              }
-            ]
-          }
-        ]
-      },
+      schema: null,
+      data: null,
       selectedSectionId: null,
       isPlaying: false,
       currentTime: 0,
@@ -71,7 +51,7 @@ export const useAnnotationStore = create<AnnotationState>()(
       
       setAudioUrl: (url) => set({ audioUrl: url }),
       setSchema: (schema) => set({ schema }),
-      setData: (data) => set({ data: JSON.parse(JSON.stringify(data)) }),
+      setData: (data) => set({ data: data ? JSON.parse(JSON.stringify(data)) : null }),
       setSelectedSectionId: (id) => set({ selectedSectionId: id }),
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       setCurrentTime: (time) => set({ currentTime: time }),
@@ -92,6 +72,8 @@ export const useAnnotationStore = create<AnnotationState>()(
       
       addSectionAtCurrentTime: () => {
         const { data, selectedSectionId, currentTime } = get();
+        if (!data) return;
+        
         const newData = JSON.parse(JSON.stringify(data));
         
         let vIdx = 0;
@@ -99,7 +81,7 @@ export const useAnnotationStore = create<AnnotationState>()(
           vIdx = Number(selectedSectionId.split('-')[0]);
         }
 
-        if (newData.variants[vIdx]) {
+        if (newData.variants && newData.variants[vIdx]) {
           if (!newData.variants[vIdx].sections) newData.variants[vIdx].sections = [];
           
           const newSection = {
@@ -132,3 +114,4 @@ export const useAnnotationStore = create<AnnotationState>()(
     }
   )
 );
+

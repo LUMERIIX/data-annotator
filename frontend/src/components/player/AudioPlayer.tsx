@@ -26,7 +26,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
 
   const { 
     isPlaying, setIsPlaying, setCurrentTime, 
-    data, setData, selectedSectionId, 
+    data, selectedSectionId, 
     seekRequest, togglePlayRequest, 
     seekStep, setSeekStep,
     showSpectrogram, setShowSpectrogram
@@ -130,20 +130,22 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
     regions.on('region-updated', (region) => {
       if (isUpdatingFromStore.current) return;
       const currentState = useAnnotationStore.getState();
+      if (!currentState.data) return;
+
       const parts = region.id.split('-');
       const vIdx = Number(parts[0]);
       const sIdx = Number(parts[1]);
       const newData = JSON.parse(JSON.stringify(currentState.data));
 
       if (parts.length === 2) {
-        if (newData.variants[vIdx]?.sections[sIdx]) {
+        if (newData.variants?.[vIdx]?.sections?.[sIdx]) {
           newData.variants[vIdx].sections[sIdx].start = Math.round(region.start * 1000);
           newData.variants[vIdx].sections[sIdx].stop = Math.round(region.end * 1000);
           currentState.setData(newData);
         }
       } else if (parts.length === 4 && parts[2] === 'e') {
         const eIdx = Number(parts[3]);
-        if (newData.variants[vIdx]?.sections[sIdx]?.events[eIdx]) {
+        if (newData.variants?.[vIdx]?.sections?.[sIdx]?.events?.[eIdx]) {
           newData.variants[vIdx].sections[sIdx].events[eIdx].start = Math.round(region.start * 1000);
           newData.variants[vIdx].sections[sIdx].events[eIdx].stop = Math.round(region.end * 1000);
           currentState.setData(newData);
@@ -169,9 +171,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
 
   const syncRegions = (regionsPlugin: any, currentData: any, selectedId: string | null) => {
     const existingRegions = regionsPlugin.getRegions();
+    if (!currentData || !currentData.variants) {
+      existingRegions.forEach((r: any) => r.remove());
+      return;
+    }
     const activeIds = new Set<string>();
 
     currentData.variants.forEach((variant: any, vIdx: number) => {
+      if (!variant.sections) return;
       variant.sections.forEach((section: any, sIdx: number) => {
         const id = `${vIdx}-${sIdx}`;
         activeIds.add(id);

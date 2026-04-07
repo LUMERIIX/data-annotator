@@ -25,12 +25,36 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
   const isUpdatingFromStore = useRef(false);
 
   const { 
-    isPlaying, setIsPlaying, setCurrentTime, 
+    currentTime,
+    isPlaying, setIsPlaying, setCurrentTime, seekTo,
     data, selectedSectionId, 
     seekRequest, togglePlayRequest, 
     seekStep, setSeekStep,
     showSpectrogram, setShowSpectrogram
   } = useAnnotationStore();
+  
+  const [localMs, setLocalMs] = useState(0);
+
+  // Sync localMs with currentTime from store when NOT focused
+  useEffect(() => {
+    setLocalMs(Math.round(currentTime));
+  }, [currentTime]);
+
+  const handleMsInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setLocalMs(val);
+  };
+
+  const handleMsSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      seekTo(localMs);
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
+  const handleMsBlur = () => {
+    seekTo(localMs);
+  };
   
   const [duration, setDuration] = useState(0);
   const [zoom, setZoom] = useState(0);
@@ -267,7 +291,21 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
         <div className="main-controls">
           <button onClick={togglePlay} disabled={isLoading}>{isPlaying ? 'Pause' : 'Play'}</button>
           <div className="time-display">
-            {wavesurferRef.current ? formatTime(wavesurferRef.current.getCurrentTime()) : '00:00.000'} / {formatTime(duration)}
+            {formatTime(currentTime / 1000)} 
+            <div className="ms-input-container">
+              <input 
+                type="number"
+                className="ms-input"
+                value={localMs}
+                onChange={handleMsInput}
+                onKeyDown={handleMsSubmit}
+                onBlur={handleMsBlur}
+                title="Manual timecode entry (ms) - press ENTER to jump"
+              />
+              <span className="ms-unit">ms</span>
+            </div>
+            <span className="time-divider">/</span> 
+            {formatTime(duration)}
           </div>
         </div>
 
@@ -338,7 +376,54 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ url }) => {
         .main-controls { display: flex; align-items: center; gap: 1rem; }
         .control-group { display: flex; align-items: center; gap: 2rem; }
         
-        .time-display { font-family: monospace; font-size: 1.1rem; color: #aaa; }
+        .time-display { 
+          font-family: 'JetBrains Mono', 'Roboto Mono', monospace; 
+          font-size: 1.1rem; 
+          color: #aaa; 
+          display: flex;
+          align-items: baseline;
+          gap: 0.5rem;
+        }
+
+        .ms-input-container {
+          display: flex;
+          align-items: center;
+          background: rgba(100, 108, 255, 0.1);
+          padding: 1px 8px;
+          border-radius: 6px;
+          border: 1px solid rgba(100, 108, 255, 0.3);
+          gap: 4px;
+        }
+
+        .ms-input {
+          background: transparent;
+          border: none;
+          color: var(--accent-color);
+          font-family: inherit;
+          font-size: 0.95rem;
+          font-weight: bold;
+          width: 70px;
+          padding: 0;
+          text-align: right;
+          outline: none;
+        }
+
+        .ms-input::-webkit-inner-spin-button,
+        .ms-input::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .ms-unit {
+          font-size: 0.75rem;
+          color: #666;
+          font-weight: normal;
+        }
+
+        .time-divider {
+          color: #444;
+          margin: 0 0.25rem;
+        }
         .seek-step-selector, .zoom-control, .setting-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #888; }
         .seek-step-selector select { background: #333; color: white; border: 1px solid #555; padding: 0.2rem; border-radius: 4px; }
         

@@ -200,3 +200,38 @@ button:hover {
   margin-top: -0.5rem;
   margin-bottom: 1rem;
 }
+
+.timecode-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.timecode-input-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-timecode {
+  padding: 0 12px;
+  background-color: #646cff;
+  color: white;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  border-radius: 6px;
+  border: 2px solid white;
+  font-weight: bold;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-timecode:hover {
+  background-color: #747bff;
+  filter: brightness(1.2);
+}
